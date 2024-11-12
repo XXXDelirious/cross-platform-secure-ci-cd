@@ -1,0 +1,41 @@
+- name: Build Docker Image
+  run: docker buildx build -t my-app:${{ matrix.os }} --platform linux/amd64,linux/arm64 -f docker/Dockerfile .
+name: Cross-Platform Secure CI/CD Pipeline for Containerized Applications
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
+      VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
+
+    steps:
+      # Step 1: Check out the code
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Step 2: Set up Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      # Step 3: Build Docker Image for Platform-Specific Testing
+      - name: Build Docker Image
+        run: docker buildx build -t my-app:${{ matrix.os }} --platform linux/amd64,linux/arm64 -f Dockerfile .
+
+      # Step 4: Save Docker Image as Artifact
+      - name: Save Docker Image
+        uses: actions/upload-artifact@v3
+        with:
+          name: my-app-${{ matrix.os }}
+          path: ./my-app:${{ matrix.os }}
