@@ -27,7 +27,21 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      # Step 3: Set up environment based on OS
+      # Step 3: Install Docker on macOS if not already installed
+      - name: Install Docker (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install --cask docker
+          open /Applications/Docker.app  # Launch Docker application
+          sleep 30  # Wait for Docker to initialize
+
+      # Step 4: Ensure Docker is running
+      - name: Ensure Docker is running
+        run: |
+          docker --version
+          docker info
+
+      # Step 5: Set up environment based on OS
       - name: Set up environment
         run: |
           if [[ "$RUNNER_OS" == "Linux" || "$RUNNER_OS" == "macOS" ]]; then
@@ -36,11 +50,12 @@ jobs:
             echo "Setting up Windows environment"
           fi
 
-      # Step 4: Build Docker Image for Platform-Specific Testing
+      # Step 6: Build Docker Image for Platform-Specific Testing (with --load flag to avoid pushing)
       - name: Build Docker Image
-        run: docker buildx build -t my-app:${{ matrix.os }} --platform linux/amd64,linux/arm64 -f Dockerfile .
+        run: |
+          docker buildx build -t my-app:${{ matrix.os }} --platform linux/amd64,linux/arm64 -f Dockerfile . --load
 
-      # Step 5: Save Docker Image as Artifact
+      # Step 7: Save Docker Image as Artifact
       - name: Save Docker Image
         uses: actions/upload-artifact@v3
         with:
