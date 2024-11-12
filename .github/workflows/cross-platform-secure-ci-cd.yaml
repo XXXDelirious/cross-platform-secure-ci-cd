@@ -10,10 +10,7 @@ on:
 
 jobs:
   build-and-test:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]  # Cross-platform support
-    runs-on: ${{ matrix.os }}
+    runs-on: windows-latest  # Set to run only on Windows
     env:
       VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
       VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
@@ -27,46 +24,31 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      # Step 3: Install Docker on macOS if not already installed
-      - name: Install Docker (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          brew install --cask docker
-          open /Applications/Docker.app  # Launch Docker application
-          sleep 30  # Wait for Docker to initialize
-
-      # Step 4: Ensure Docker is running
+      # Step 3: Ensure Docker is running
       - name: Ensure Docker is running
         run: |
           docker --version
           docker info
 
-      # Step 5: Set up environment based on OS
-      - name: Set up environment
+      # Step 4: Set up Windows environment (optional for specific steps)
+      - name: Set up environment for Windows
         run: |
-          if [[ "$RUNNER_OS" == "Linux" || "$RUNNER_OS" == "macOS" ]]; then
-            echo "Setting up Linux/macOS environment"
-          elif [[ "$RUNNER_OS" == "Windows" ]]; then
-            echo "Setting up Windows environment"
-          fi
+          echo "Setting up Windows environment"
 
-      # Step 6: Build Docker Image for Platform-Specific Testing
-      # Replace --load with --push for multi-platform support
+      # Step 5: Build Docker Image for Windows-specific Testing
       - name: Build Docker Image
         run: |
-          docker buildx build -t my-app:${{ matrix.os }} --platform linux/amd64,linux/arm64 -f Dockerfile . --push  # Make sure Dockerfile is in the root
+          docker buildx build -t my-app:windows --platform windows/amd64 -f Dockerfile . --push  # Make sure Dockerfile is in the root
 
-      # Step 7: Save Docker Image as Artifact (if not using --push, use --load)
-      # You can upload it as an artifact if it's being loaded locally (for testing purposes)
+      # Step 6: Save Docker Image as Artifact (if not using --push, use --load)
       - name: Save Docker Image
-        if: ${{ matrix.os == 'ubuntu-latest' }}  # You can specify which OS to save images for if needed
         uses: actions/upload-artifact@v3
         with:
-          name: my-app-${{ matrix.os }}
-          path: ./my-app:${{ matrix.os }}
+          name: my-app-windows
+          path: ./my-app:windows
 
   security:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest  # Set to run only on Windows
     needs: build-and-test
 
     steps:
@@ -86,18 +68,14 @@ jobs:
           target: 'http://localhost:8080'
 
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest  # Set to run only on Windows
     needs: security
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      # Deployment step or deployment to a mobile-specific platform
-      - name: Deploy Android to Firebase
+      # Deployment to Windows-specific platform (e.g., deploy to a Windows server, etc.)
+      - name: Deploy to Windows (Custom)
         run: |
-          firebase appdistribution:distribute my-android-app:latest --app android-app-id
-
-      - name: Deploy iOS to TestFlight
-        run: |
-          xcrun altool --upload-app -f build/MyApp.ipa -t ios -u $APPLE_ID -p $APPLE_PASS
+          echo "Deploying Windows application"
