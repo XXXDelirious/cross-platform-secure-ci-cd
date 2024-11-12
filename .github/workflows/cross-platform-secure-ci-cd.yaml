@@ -1,4 +1,3 @@
-docker buildx build -t my-app:ubuntu-latest --platform linux/amd64,linux/arm64 -f ./docker/Dockerfile . --push
 name: Cross-Platform Secure CI/CD Pipeline for Containerized Applications
 
 on:
