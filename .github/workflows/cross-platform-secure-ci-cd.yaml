@@ -1,3 +1,4 @@
+docker buildx build -t my-app:ubuntu-latest --platform linux/amd64,linux/arm64 -f ./docker/Dockerfile . --push
 name: Cross-Platform Secure CI/CD Pipeline for Containerized Applications
 
 on:
@@ -54,7 +55,7 @@ jobs:
       # Replace --load with --push for multi-platform support
       - name: Build Docker Image
         run: |
-          docker buildx build -t my-app:${{ matrix.os }} --platform linux/amd64,linux/arm64 -f Dockerfile . --push
+          docker buildx build -t my-app:${{ matrix.os }} --platform linux/amd64,linux/arm64 -f Dockerfile . --push  # Make sure Dockerfile is in the root
 
       # Step 7: Save Docker Image as Artifact (if not using --push, use --load)
       # You can upload it as an artifact if it's being loaded locally (for testing purposes)
