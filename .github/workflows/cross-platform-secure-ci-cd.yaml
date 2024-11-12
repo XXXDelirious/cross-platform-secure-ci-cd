@@ -1,5 +1,3 @@
-- name: Build Docker Image
-  run: docker buildx build -t my-app:${{ matrix.os }} --platform linux/amd64,linux/arm64 -f docker/Dockerfile .
 name: Cross-Platform Secure CI/CD Pipeline for Containerized Applications
 
 on:
@@ -14,7 +12,7 @@ jobs:
   build-and-test:
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]  # Cross-platform support
     runs-on: ${{ matrix.os }}
     env:
       VAULT_ADDR: ${{ secrets.VAULT_ADDR }}
@@ -29,13 +27,59 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      # Step 3: Build Docker Image for Platform-Specific Testing
+      # Step 3: Set up environment based on OS
+      - name: Set up environment
+        run: |
+          if [[ "$RUNNER_OS" == "Linux" || "$RUNNER_OS" == "macOS" ]]; then
+            echo "Setting up Linux/macOS environment"
+          elif [[ "$RUNNER_OS" == "Windows" ]]; then
+            echo "Setting up Windows environment"
+          fi
+
+      # Step 4: Build Docker Image for Platform-Specific Testing
       - name: Build Docker Image
         run: docker buildx build -t my-app:${{ matrix.os }} --platform linux/amd64,linux/arm64 -f Dockerfile .
 
-      # Step 4: Save Docker Image as Artifact
+      # Step 5: Save Docker Image as Artifact
       - name: Save Docker Image
         uses: actions/upload-artifact@v3
         with:
           name: my-app-${{ matrix.os }}
           path: ./my-app:${{ matrix.os }}
+
+  security:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Dependency Scanning
+      - name: Run Dependency Scanning
+        run: |
+          npm install -g retire
+          retire
+
+      # Dynamic Application Security Testing (DAST)
+      - name: Run OWASP ZAP
+        uses: jupiter/zap-scanner-action@v1.0.4
+        with:
+          target: 'http://localhost:8080'
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: security
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Deployment step or deployment to a mobile-specific platform
+      - name: Deploy Android to Firebase
+        run: |
+          firebase appdistribution:distribute my-android-app:latest --app android-app-id
+
+      - name: Deploy iOS to TestFlight
+        run: |
+          xcrun altool --upload-app -f build/MyApp.ipa -t ios -u $APPLE_ID -p $APPLE_PASS
