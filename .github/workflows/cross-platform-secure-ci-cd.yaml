@@ -50,13 +50,16 @@ jobs:
             echo "Setting up Windows environment"
           fi
 
-      # Step 6: Build Docker Image for Platform-Specific Testing (with --load flag to avoid pushing)
+      # Step 6: Build Docker Image for Platform-Specific Testing
+      # Replace --load with --push for multi-platform support
       - name: Build Docker Image
         run: |
-          docker buildx build -t my-app:${{ matrix.os }} --platform linux/amd64,linux/arm64 -f Dockerfile . --load
+          docker buildx build -t my-app:${{ matrix.os }} --platform linux/amd64,linux/arm64 -f Dockerfile . --push
 
-      # Step 7: Save Docker Image as Artifact
+      # Step 7: Save Docker Image as Artifact (if not using --push, use --load)
+      # You can upload it as an artifact if it's being loaded locally (for testing purposes)
       - name: Save Docker Image
+        if: ${{ matrix.os == 'ubuntu-latest' }}  # You can specify which OS to save images for if needed
         uses: actions/upload-artifact@v3
         with:
           name: my-app-${{ matrix.os }}
